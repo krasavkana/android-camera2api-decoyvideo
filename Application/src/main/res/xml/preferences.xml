@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:title="Settings"
+    android:key="preference_root">
+
+    <!-- is Front Lens Facing -->
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="preference_front_lens_facing"
+        android:title="Front Lens Facing?" />
+    <!-- Camouflage Mode:translucent or imageview -->
+    <ListPreference
+        android:title="Camouflage Mode"
+        android:key="preference_camouflage"
+        android:entries="@array/entries_preference_camouflage"
+        android:entryValues="@array/entry_values_preference_camouflage"
+        android:defaultValue="@string/default_value_preference_camouflage" />
+    <!-- Inverval for Imageview -->
+    <ListPreference
+        android:title="Imageview Interval"
+        android:key="preference_imageview_interval"
+        android:entries="@array/entries_preference_imageview_interval"
+        android:entryValues="@array/entry_values_preference_imageview_interval"
+        android:defaultValue="@string/default_value_preference_imageview_interval" />
+
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="preference_shoot_on_start"
+        android:title="Shoot on Start" />
+
+    <EditTextPreference
+        android:key="preference_save_prefix"
+        android:title="Prefix for Saving"/>
+
+    <ListPreference
+        android:title="Theme"
+        android:key="preference_theme"
+        android:entries="@array/entries_preference_theme"
+        android:entryValues="@array/entry_values_preference_theme"
+        android:defaultValue="@string/default_value_preference_theme" />
+
+</PreferenceScreen>
+

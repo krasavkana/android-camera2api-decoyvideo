@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="shortAppName">Decoy</string>
     <string name="record">R</string>
     <string name="stop">S</string>
     <string name="info">FR</string>
     <string name="permission_request">This sample needs permission for camera and audio recording.</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
+    <string name="default_value_preference_theme">light</string>
+    <string name="default_value_preference_camouflage">translucent</string>
+    <string name="default_value_preference_imageview_interval">10000</string>
+    <string name="default_value_preference_prefix">video</string>
 </resources>

@@ -24,6 +24,7 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -49,10 +50,12 @@ import androidx.annotation.NonNull;
 //import FragmentCompat;
 //import android.support.v13.app.FragmentCompat;
 import androidx.core.app.ActivityCompat;
+import androidx.preference.PreferenceManager;
 //import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
@@ -85,6 +88,9 @@ public class DecoyVideoFragment extends Fragment
     private static final SparseIntArray INVERSE_ORIENTATIONS = new SparseIntArray();
 
     private static final String TAG = "DecoyVideoFragment";
+
+    SharedPreferences mPref;
+
     private static final int REQUEST_VIDEO_PERMISSIONS = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
 
@@ -107,6 +113,10 @@ public class DecoyVideoFragment extends Fragment
         INVERSE_ORIENTATIONS.append(Surface.ROTATION_270, 0);
     }
 
+    /**
+     * ID of the current {@link CameraDevice}.
+     */
+    private String mCameraId;
     /**
      * An {@link AutoFitTextureView} for camera preview.
      */
@@ -172,6 +182,16 @@ public class DecoyVideoFragment extends Fragment
      * MediaRecorder
      */
     private MediaRecorder mMediaRecorder;
+
+    /**
+     * LENS Facing is FRONT
+     */
+    private boolean mLensFacingFront;
+
+    /**
+     * This is the output file for our video
+     */
+    private String mPrefix;
 
     /**
      * Whether the app is recording video now
@@ -285,15 +305,51 @@ public class DecoyVideoFragment extends Fragment
         }
     }
 
+    /**
+     * View.OnKeyListenerを設定する
+     * http://outofmem.hatenablog.com/entry/2014/04/20/090047
+     * https://stackoverflow.com/questions/7992216/android-fragment-handle-back-button-press
+     *
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         Log.d(TAG, "onCreateView()");
-        return inflater.inflate(R.layout.fragment_camera2_video, container, false);
-    }
+        final View v =inflater.inflate(R.layout.fragment_camera2_video, container, false);
 
-//    private String fileName = "camouflage.jpg";
-//    private File file;
+        // View#setFocusableInTouchModeでtrueをセットしておくこと
+        v.setFocusableInTouchMode(true);
+        v.requestFocus();
+        v.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // KeyEvent.ACTION_DOWN以外のイベントを無視する
+                // （これがないとKeyEvent.ACTION_UPもフックしてしまう）
+                Log.d(TAG, "onKey()");
+                if(event.getAction() != KeyEvent.ACTION_DOWN) {
+                    return false;
+                }
+                switch(keyCode) {
+//                    case KeyEvent.KEYCODE_VOLUME_UP:
+//                        // TODO:音量増加キーが押された時のイベント
+//                        return true;
+                    case KeyEvent.KEYCODE_VOLUME_DOWN:
+                        // TODO:音量減少キーが押された時のイベント
+                        if (mIsRecordingVideo) {
+                            stopRecordingVideo();
+                        } else {
+                            startRecordingVideo();
+                        }
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
+
+
+        return v;
+    }
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
@@ -308,6 +364,19 @@ public class DecoyVideoFragment extends Fragment
     }
 
     @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        Log.d(TAG, "onActivityCreated()");
+        super.onActivityCreated(savedInstanceState);
+        mPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String aaa = mPref.getString("preference_theme", "");
+        Log.d(TAG, "preference_theme:" + aaa);
+        mLensFacingFront = mPref.getBoolean("preference_front_lens_facing", false);
+        Log.d(TAG, "mLensFacingFront:" + mLensFacingFront);
+        mPrefix = mPref.getString("preference_save_prefix", "");
+        Log.d(TAG, "mPrefix:" + mPrefix);
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         startBackgroundThread();
@@ -316,7 +385,6 @@ public class DecoyVideoFragment extends Fragment
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
-//        isFinished = false;
     }
 
     @Override
@@ -324,7 +392,6 @@ public class DecoyVideoFragment extends Fragment
         closeCamera();
         stopBackgroundThread();
         super.onPause();
-//        isFinished = true;
     }
 
     @Override
@@ -339,13 +406,13 @@ public class DecoyVideoFragment extends Fragment
                 break;
             }
             case R.id.info: {
-//                Activity activity = getActivity();
-//                if (null != activity) {
-//                    new AlertDialog.Builder(activity)
-//                            .setMessage(R.string.intro_message)
-//                            .setPositiveButton(android.R.string.ok, null)
-//                            .show();
-//                }
+                if (mLensFacingFront){
+                    mLensFacingFront = false;
+                }else{
+                    mLensFacingFront = true;
+                }
+                onPause();
+                onResume();
                 break;
             }
         }
@@ -439,10 +506,14 @@ public class DecoyVideoFragment extends Fragment
      */
     @SuppressWarnings("MissingPermission")
     private void openCamera(int width, int height) {
+        Log.d(TAG, "openCamera()");
         if (!hasPermissionsGranted(VIDEO_PERMISSIONS)) {
             requestVideoPermissions();
             return;
         }
+        setUpCameraOutputs(width, height);
+        configureTransform(width, height);
+        mMediaRecorder = new MediaRecorder();
         final Activity activity = getActivity();
         if (null == activity || activity.isFinishing()) {
             return;
@@ -453,29 +524,54 @@ public class DecoyVideoFragment extends Fragment
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            String cameraId = manager.getCameraIdList()[0];
+            manager.openCamera(mCameraId, mStateCallback, null);
+        } catch (CameraAccessException e) {
+            Toast.makeText(activity, "Cannot access the camera.", Toast.LENGTH_SHORT).show();
+            activity.finish();
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while trying to lock camera opening.");
+        }
+    }
 
-            // Choose the sizes for camera preview and video recording
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
-            StreamConfigurationMap map = characteristics
-                    .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-            mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-            if (map == null) {
-                throw new RuntimeException("Cannot get available preview/video sizes");
-            }
-            mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
-            mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
-                    width, height, mVideoSize);
+    private void setUpCameraOutputs(int width, int height) {
+        Log.d(TAG, "setUpCameraOutputs()");
+        Activity activity = getActivity();
+        CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
+        try {
+            for (String cameraId : manager.getCameraIdList()) {
+                CameraCharacteristics characteristics
+                        = manager.getCameraCharacteristics(cameraId);
 
-            int orientation = getResources().getConfiguration().orientation;
-            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                mTextureView.setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
-            } else {
-                mTextureView.setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
+                // We don't use a front facing camera in this sample.
+                Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT && mLensFacingFront == false) {
+                    continue;
+                }
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK && mLensFacingFront) {
+                    continue;
+                }
+
+                StreamConfigurationMap map = characteristics.get(
+                        CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+                if (map == null) {
+                    throw new RuntimeException("Cannot get available preview/video sizes");
+                }
+
+                mVideoSize = chooseVideoSize(map.getOutputSizes(MediaRecorder.class));
+                mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
+                        width, height, mVideoSize);
+
+                int orientation = getResources().getConfiguration().orientation;
+                if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    mTextureView.setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+                } else {
+                    mTextureView.setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
+                }
+
+                mCameraId = cameraId;
+                return;
             }
-            configureTransform(width, height);
-            mMediaRecorder = new MediaRecorder();
-            manager.openCamera(cameraId, mStateCallback, null);
         } catch (CameraAccessException e) {
             Toast.makeText(activity, "Cannot access the camera.", Toast.LENGTH_SHORT).show();
             activity.finish();
@@ -484,10 +580,9 @@ public class DecoyVideoFragment extends Fragment
             // device this code runs.
             ErrorDialog.newInstance(getString(R.string.camera_error))
                     .show(getChildFragmentManager(), FRAGMENT_DIALOG);
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Interrupted while trying to lock camera opening.");
         }
     }
+
 
     private void closeCamera() {
         try {

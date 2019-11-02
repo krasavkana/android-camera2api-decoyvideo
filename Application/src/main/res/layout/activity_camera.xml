@@ -6,12 +6,19 @@
     android:layout_height="match_parent"
     android:background="@android:color/transparent"
     tools:context="com.krasavkana.android.decoyvideo.VideoActivity">
-<!--
-    <ImageView
-        android:id="@+id/image_view"
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="image"
-        android:scaleType="centerInside" />
--->
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/transparent"
+        android:theme="@style/ToolbarTheme" />
+
+        <ImageView
+            android:id="@+id/image_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="image"
+            android:scaleType="centerInside" />
+
 </FrameLayout>

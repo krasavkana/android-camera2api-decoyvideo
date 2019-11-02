@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="entries_preference_theme">
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+    <string-array name="entry_values_preference_theme">
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+
+    <string-array name="entries_preference_camouflage">
+        <item>translucent</item>
+        <item>imageview</item>
+    </string-array>
+    <string-array name="entry_values_preference_camouflage">
+        <item>translucent</item>
+        <item>imageview</item>
+    </string-array>
+
+    <string-array name="entries_preference_imageview_interval">
+        <item>10s</item>
+        <item>30s</item>
+        <item>1m</item>
+        <item>5m</item>
+        <item>10m</item>
+    </string-array>
+    <string-array name="entry_values_preference_imageview_interval">
+        <item>10000</item>
+        <item>30000</item>
+        <item>60000</item>
+        <item>300000</item>
+        <item>600000</item>
+    </string-array>
+
+</resources>
