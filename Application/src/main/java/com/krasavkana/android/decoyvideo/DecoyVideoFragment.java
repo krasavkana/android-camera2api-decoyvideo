@@ -186,7 +186,7 @@ public class DecoyVideoFragment extends Fragment
     /**
      * LENS Facing is FRONT
      */
-    private boolean mLensFacingFront;
+    private boolean mIsLensFacingFront;
 
     /**
      * This is the output file for our video
@@ -197,6 +197,16 @@ public class DecoyVideoFragment extends Fragment
      * Whether the app is recording video now
      */
     private boolean mIsRecordingVideo;
+
+    /**
+     * Whether camera device has been configured
+     */
+//    private boolean mIsCameraConfigured;
+
+    /**
+     * Whether the app will record on start
+     */
+    private boolean mIsRecordOnStart;
 
     /**
      * An additional thread for running tasks that shouldn't block the UI.
@@ -220,12 +230,18 @@ public class DecoyVideoFragment extends Fragment
 
         @Override
         public void onOpened(@NonNull CameraDevice cameraDevice) {
+            Log.d(TAG, "mSateCallback_onOpened()");
             mCameraDevice = cameraDevice;
             startPreview();
             mCameraOpenCloseLock.release();
             if (null != mTextureView) {
                 configureTransform(mTextureView.getWidth(), mTextureView.getHeight());
             }
+//            mIsCameraConfigured = true;
+//            Log.d(TAG, "mIsCameraConfigured:" + mIsCameraConfigured);
+//            if (mIsRecordOnStart && mIsRecordingVideo==false) {
+//                startRecordingVideo();
+//            }
         }
 
         @Override
@@ -248,8 +264,8 @@ public class DecoyVideoFragment extends Fragment
 
     };
     private Integer mSensorOrientation;
-    private String mNextVideoAbsolutePath;
-    private String mNextVideoFileName;
+    private String mVideoAbsolutePath;
+    private String mVideoFileName;
     private CaptureRequest.Builder mPreviewBuilder;
 
     public static DecoyVideoFragment newInstance() {
@@ -370,10 +386,13 @@ public class DecoyVideoFragment extends Fragment
         mPref = PreferenceManager.getDefaultSharedPreferences(getContext());
         String aaa = mPref.getString("preference_theme", "");
         Log.d(TAG, "preference_theme:" + aaa);
-        mLensFacingFront = mPref.getBoolean("preference_front_lens_facing", false);
-        Log.d(TAG, "mLensFacingFront:" + mLensFacingFront);
+        mIsLensFacingFront = mPref.getBoolean("preference_front_lens_facing", false);
+        Log.d(TAG, "mLensFacingFront:" + mIsLensFacingFront);
         mPrefix = mPref.getString("preference_save_prefix", "");
         Log.d(TAG, "mPrefix:" + mPrefix);
+        mIsRecordOnStart = mPref.getBoolean("preference_shoot_on_start", false);
+        Log.d(TAG, "mIsRecordOnStart:" + mIsRecordOnStart);
+//        mIsCameraConfigured = false;
     }
 
     @Override
@@ -385,6 +404,7 @@ public class DecoyVideoFragment extends Fragment
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
+//        Log.d(TAG, "mIsCameraConfigured:" + mIsCameraConfigured);
     }
 
     @Override
@@ -406,10 +426,10 @@ public class DecoyVideoFragment extends Fragment
                 break;
             }
             case R.id.info: {
-                if (mLensFacingFront){
-                    mLensFacingFront = false;
+                if (mIsLensFacingFront){
+                    mIsLensFacingFront = false;
                 }else{
-                    mLensFacingFront = true;
+                    mIsLensFacingFront = true;
                 }
                 onPause();
                 onResume();
@@ -544,10 +564,10 @@ public class DecoyVideoFragment extends Fragment
 
                 // We don't use a front facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT && mLensFacingFront == false) {
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT && mIsLensFacingFront == false) {
                     continue;
                 }
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK && mLensFacingFront) {
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK && mIsLensFacingFront) {
                     continue;
                 }
 
@@ -585,6 +605,7 @@ public class DecoyVideoFragment extends Fragment
 
 
     private void closeCamera() {
+        Log.d(TAG, "closeCamera()");
         try {
             mCameraOpenCloseLock.acquire();
             closePreviewSession();
@@ -607,6 +628,7 @@ public class DecoyVideoFragment extends Fragment
      * Start the camera preview.
      */
     private void startPreview() {
+        Log.d(TAG, "startPreview()");
         if (null == mCameraDevice || !mTextureView.isAvailable() || null == mPreviewSize) {
             return;
         }
@@ -646,6 +668,7 @@ public class DecoyVideoFragment extends Fragment
      * Update the camera preview. {@link #startPreview()} needs to be called in advance.
      */
     private void updatePreview() {
+        Log.d(TAG, "updatePreview()");
         if (null == mCameraDevice) {
             return;
         }
@@ -672,6 +695,7 @@ public class DecoyVideoFragment extends Fragment
      * @param viewHeight The height of `mTextureView`
      */
     private void configureTransform(int viewWidth, int viewHeight) {
+        Log.d(TAG, "configureTransform()");
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
             return;
@@ -695,6 +719,7 @@ public class DecoyVideoFragment extends Fragment
     }
 
     private void setUpMediaRecorder() throws IOException {
+        Log.d(TAG, "setUpMediaRecorder()");
         final Activity activity = getActivity();
         if (null == activity) {
             return;
@@ -702,11 +727,11 @@ public class DecoyVideoFragment extends Fragment
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-        if (mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty()) {
-            mNextVideoFileName = getVideoFileName();
-            mNextVideoAbsolutePath = getVideoFilePath(getActivity());
+        if (mVideoAbsolutePath == null || mVideoAbsolutePath.isEmpty()) {
+            mVideoFileName = getVideoFileName();
+            mVideoAbsolutePath = getVideoFilePath(getActivity());
         }
-        mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
+        mMediaRecorder.setOutputFile(mVideoAbsolutePath);
         mMediaRecorder.setVideoEncodingBitRate(10000000);
         mMediaRecorder.setVideoFrameRate(30);
         mMediaRecorder.setVideoSize(mVideoSize.getWidth(), mVideoSize.getHeight());
@@ -727,13 +752,14 @@ public class DecoyVideoFragment extends Fragment
     private String getVideoFilePath(Context context) {
         final File dir = context.getExternalFilesDir(null);
         return (dir == null ? "" : (dir.getAbsolutePath() + "/"))
-                + mNextVideoFileName;
+                + mVideoFileName;
     }
     private String getVideoFileName() {
-        return ("video" +getNowTimestamp() + ".mp4");
+        return (mPrefix + getNowTimestamp() + ".mp4");
     }
 
     private void startRecordingVideo() {
+        Log.d(TAG, "startRecordingVideo()");
         if (null == mCameraDevice || !mTextureView.isAvailable() || null == mPreviewSize) {
             return;
         }
@@ -792,6 +818,7 @@ public class DecoyVideoFragment extends Fragment
     }
 
     private void closePreviewSession() {
+        Log.d(TAG, "closePreviewSession()");
         if (mPreviewSession != null) {
             mPreviewSession.close();
             mPreviewSession = null;
@@ -799,6 +826,7 @@ public class DecoyVideoFragment extends Fragment
     }
 
     private void stopRecordingVideo() {
+        Log.d(TAG, "stopRecordingVideo()");
         // UI
         mIsRecordingVideo = false;
         mButtonVideo.setText(R.string.record);
@@ -808,11 +836,11 @@ public class DecoyVideoFragment extends Fragment
 
         Activity activity = getActivity();
         if (null != activity) {
-            Toast.makeText(activity, "Video saved: " + mNextVideoFileName,
+            Toast.makeText(activity, "Video saved: " + mVideoFileName,
                     Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "Video saved: " + mNextVideoAbsolutePath);
+            Log.d(TAG, "Video saved: " + mVideoAbsolutePath);
         }
-        mNextVideoAbsolutePath = null;
+        mVideoAbsolutePath = null;
         startPreview();
     }
 
