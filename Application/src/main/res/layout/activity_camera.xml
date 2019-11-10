@@ -11,14 +11,14 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@android:color/transparent"
+        android:background="#22cecece"
         android:theme="@style/ToolbarTheme" />
 
         <ImageView
             android:id="@+id/image_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:contentDescription="image"
+            android:contentDescription="camouflage_image"
             android:scaleType="centerInside" />
 
 </FrameLayout>

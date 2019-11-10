@@ -10,4 +10,6 @@
     <string name="default_value_preference_camouflage">translucent</string>
     <string name="default_value_preference_imageview_interval">10000</string>
     <string name="default_value_preference_prefix">video</string>
+    <string name="default_value_preference_finder_location">ML</string>
+    <string name="default_value_preference_finder_size">40x60</string>
 </resources>
