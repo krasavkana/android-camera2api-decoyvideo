@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="entries_preference_theme">
+        <item>雪原</item>
+        <item>漆黒</item>
+    </string-array>
+    <string-array name="entry_values_preference_theme">
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+
+    <string-array name="entries_preference_camouflage">
+        <item>半透過</item>
+        <item>画像</item>
+        <item>テーマ</item>
+    </string-array>
+    <string-array name="entry_values_preference_camouflage">
+        <item>translucent</item>
+        <item>imageview</item>
+        <item>theme</item>
+    </string-array>
+
+    <string-array name="entries_preference_imageview_interval">
+        <item>10s</item>
+        <item>30s</item>
+        <item>1m</item>
+        <item>5m</item>
+        <item>10m</item>
+    </string-array>
+    <string-array name="entry_values_preference_imageview_interval">
+        <item>10000</item>
+        <item>30000</item>
+        <item>60000</item>
+        <item>300000</item>
+        <item>600000</item>
+    </string-array>
+
+    <string-array name="entries_preference_finder_location">
+        <item>TopLeft</item>
+        <item>TopRight</item>
+        <item>MidLeft</item>
+        <item>BottomLeft</item>
+        <item>BottomRight</item>
+    </string-array>
+    <string-array name="entry_values_preference_finder_location">
+        <item>TL</item>
+        <item>TR</item>
+        <item>ML</item>
+        <item>BL</item>
+        <item>BR</item>
+    </string-array>
+    <string-array name="entries_preference_finder_size">
+        <item>Large</item>
+        <item>Middle</item>
+        <item>Small</item>
+        <item>Tiny</item>
+    </string-array>
+    <string-array name="entry_values_preference_finder_size">
+        <item>80x120</item>
+        <item>40x60</item>
+        <item>20x30</item>
+        <item>10x15</item>
+    </string-array>
+
+    <string-array name="entries_preference_capture_intent">
+        <item>RECORD</item>
+        <item>SNAPSHOT</item>
+        <item>STILL</item>
+    </string-array>
+    <string-array name="entry_values_preference_capture_intent">
+        <item>VIDEO_RECORD</item>
+        <item>VIDEO_SNAPSHOT</item>
+        <item>STILL_CAPTURE</item>
+    </string-array>
+
+</resources>
