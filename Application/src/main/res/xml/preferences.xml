@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:title="Settings"
+    android:key="preference_root">
+
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="preference_front_lens_facing"
+        android:title="Front Lens Facing?" />
+
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="preference_lens_facing_button_on"
+        android:title="Lens Facing Button On?" />
+
+    <PreferenceScreen
+        android:title="Camouflage"
+        android:key="preference_camouflage_mode">
+
+        <ListPreference
+            android:title="Camouflage Mode"
+            android:key="preference_camouflage"
+            android:summary="%s"
+            android:entries="@array/entries_preference_camouflage"
+            android:entryValues="@array/entry_values_preference_camouflage"
+            android:defaultValue="@string/default_value_preference_camouflage" />
+
+        <ListPreference
+            android:title="Imageview Interval"
+            android:key="preference_imageview_interval"
+            android:summary="%s"
+            android:entries="@array/entries_preference_imageview_interval"
+            android:entryValues="@array/entry_values_preference_imageview_interval"
+            android:defaultValue="@string/default_value_preference_imageview_interval" />
+
+    </PreferenceScreen>
+    <PreferenceScreen
+        android:title="Finder"
+        android:key="preference_finder">
+
+        <ListPreference
+            android:title="Finder Location"
+            android:key="preference_finder_location"
+            android:summary="%s"
+            android:entries="@array/entries_preference_finder_location"
+            android:entryValues="@array/entry_values_preference_finder_location"
+            android:defaultValue="@string/default_value_preference_finder_location" />
+
+        <ListPreference
+            android:title="Finder Size"
+            android:key="preference_finder_size"
+            android:summary="%s"
+            android:entries="@array/entries_preference_finder_size"
+            android:entryValues="@array/entry_values_preference_finder_size"
+            android:defaultValue="@string/default_value_preference_finder_size" />
+
+    </PreferenceScreen>
+    <PreferenceScreen
+        android:title="Capture"
+        android:key="preference_capture">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="preference_af_mode_on"
+            android:title="Auto Focus On?" />
+
+        <ListPreference
+            android:title="Capture Intent"
+            android:key="preference_capture_intent"
+            android:summary="%s"
+            android:entries="@array/entries_preference_capture_intent"
+            android:entryValues="@array/entry_values_preference_capture_intent"
+            android:defaultValue="@string/default_value_preference_capture_intent" />
+
+    </PreferenceScreen>
+    <PreferenceScreen
+        android:title="Advanced"
+        android:key="preference_advanced">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="preference_video_button_on"
+            android:title="Record Button On?" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="preference_shoot_on_start"
+            android:title="Shoot on Start" />
+
+        <EditTextPreference
+            android:defaultValue="video"
+            android:key="preference_save_prefix"
+            android:title="Prefix for Saving"/>
+
+    </PreferenceScreen>
+
+    <ListPreference
+        android:title="Theme"
+        android:key="preference_theme"
+        android:summary="%s"
+        android:entries="@array/entries_preference_theme"
+        android:entryValues="@array/entry_values_preference_theme"
+        android:defaultValue="@string/default_value_preference_theme" />
+
+</PreferenceScreen>
+
