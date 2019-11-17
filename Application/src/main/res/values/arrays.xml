@@ -53,14 +53,25 @@
     <string-array name="entries_preference_finder_size">
         <item>Large</item>
         <item>Middle</item>
-        <item>small</item>
-        <item>tiny</item>
+        <item>Small</item>
+        <item>Tiny</item>
     </string-array>
     <string-array name="entry_values_preference_finder_size">
         <item>80x120</item>
         <item>40x60</item>
         <item>20x30</item>
         <item>10x15</item>
+    </string-array>
+
+    <string-array name="entries_preference_capture_intent">
+        <item>RECORD</item>
+        <item>SNAPSHOT</item>
+        <item>STILL</item>
+    </string-array>
+    <string-array name="entry_values_preference_capture_intent">
+        <item>VIDEO_RECORD</item>
+        <item>VIDEO_SNAPSHOT</item>
+        <item>STILL_CAPTURE</item>
     </string-array>
 
 </resources>

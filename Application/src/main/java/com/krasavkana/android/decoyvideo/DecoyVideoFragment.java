@@ -232,6 +232,16 @@ public class DecoyVideoFragment extends Fragment
     private boolean mIsRecordOnStart;
 
     /**
+     * Whether CONTROL_AF_MODE is ON
+     */
+    private boolean mIsAutoFocus;
+
+    /**
+     * Capture Intent Mode
+     */
+    private String mCaptureIntent;
+
+    /**
      * An additional thread for running tasks that shouldn't block the UI.
      */
     private HandlerThread mBackgroundThread;
@@ -483,6 +493,13 @@ public class DecoyVideoFragment extends Fragment
             mButtonLensFacing.setVisibility(View.INVISIBLE);
         }
 
+        // AF modeを変更する
+        mIsAutoFocus = mPref.getBoolean("preference_af_mode_on", true);
+        Log.d(TAG, "mIsAutoFocus:" + mIsAutoFocus);
+
+        // Capture Intent modeを変更する
+        mCaptureIntent = mPref.getString("preference_capture_intent", "VIDEO_RECORD");
+        Log.d(TAG, "mCaptureIntent:" + mCaptureIntent);
 
     }
 
@@ -794,8 +811,48 @@ public class DecoyVideoFragment extends Fragment
         }
     }
 
+    /**
+     * https://developer.android.com/reference/android/hardware/camera2/CameraCharacteristics
+     * https://developer.android.com/reference/android/hardware/camera2/CaptureRequest.html#CONTROL_AF_MODE
+     * https://qiita.com/ohwada/items/10fa71120cf4b9e793c3
+     *
+     */
     private void setUpCaptureRequestBuilder(CaptureRequest.Builder builder) {
+        // # 3A モードを有効にする
         builder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+
+        // 自動焦点またはマニュアル焦点を、設定に従い指定する
+        //builder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+        //builder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+        //builder.set(CaptureRequest.LENS_FOCUS_DISTANCE, 0.0f);
+        if(mIsAutoFocus == false) {
+            builder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_OFF);
+        }else{
+//            builder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
+        }
+
+        // キャプチャの目的を、設定に従い指定する
+        //builder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_MANUAL);
+        switch (mCaptureIntent){
+            case "VIDEO_RECORD":
+                builder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
+                break;
+            case "VIDEO_SNAPSHOT":
+                builder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_SNAPSHOT);
+                break;
+            case "STILL_CAPTURE":
+                builder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_STILL_CAPTURE);
+                break;
+            default:
+                break;
+        }
+
+        // 手ぶれ補正を、設定に従い指定する
+        // If a camera device supports both this mode and OIS (CaptureRequest#LENS_OPTICAL_STABILIZATION_MODE),
+        // turning both modes on may produce undesirable interaction, so it is recommended not to enable both at the same time.
+        //builder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureMetadata.LENS_OPTICAL_STABILIZATION_MODE_ON);
+        // ビデオの手ぶれ補正を、設定に従い指定する指定する
+        //builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON);
     }
 
     /**

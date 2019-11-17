@@ -57,6 +57,24 @@
 
     </PreferenceScreen>
     <PreferenceScreen
+        android:title="Capture"
+        android:key="preference_capture">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="preference_af_mode_on"
+            android:title="Auto Focus On?" />
+
+        <ListPreference
+            android:title="Capture Intent"
+            android:key="preference_capture_intent"
+            android:summary="%s"
+            android:entries="@array/entries_preference_capture_intent"
+            android:entryValues="@array/entry_values_preference_capture_intent"
+            android:defaultValue="@string/default_value_preference_capture_intent" />
+
+    </PreferenceScreen>
+    <PreferenceScreen
         android:title="Advanced"
         android:key="preference_advanced">
 

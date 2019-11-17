@@ -12,4 +12,5 @@
     <string name="default_value_preference_prefix">video</string>
     <string name="default_value_preference_finder_location">ML</string>
     <string name="default_value_preference_finder_size">40x60</string>
+    <string name="default_value_preference_capture_intent">VIDEO_RECORD</string>
 </resources>
