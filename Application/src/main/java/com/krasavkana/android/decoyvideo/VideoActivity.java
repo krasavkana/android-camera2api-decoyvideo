@@ -1,6 +1,5 @@
 package com.krasavkana.android.decoyvideo;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
@@ -26,7 +25,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class VideoActivity extends AppCompatActivity {
+public class VideoActivity extends AppCompatActivity
+        implements VideoUIFragment.VideoUIFragmentCallback {
 
     private Bitmap image;
     private boolean isFinished = false;
@@ -50,8 +50,8 @@ public class VideoActivity extends AppCompatActivity {
 
     SharedPreferences mPref;
     String mCamouflage;
-    long mImageViewInterval;
-//    boolean mMasterMuteOn;
+    boolean mCamouflageImageview;
+    //    boolean mMasterMuteOn;
     String mTheme;
 
     @Override
@@ -65,17 +65,15 @@ public class VideoActivity extends AppCompatActivity {
         ab.setTitle(R.string.shortAppName);
         if (null == savedInstanceState) {
             getFragmentManager().beginTransaction()
-                    .replace(R.id.container, DecoyVideoFragment.newInstance())
+                    .replace(R.id.container, VideoUIFragment.newInstance())
                     .commit();
         }
         mPref = PreferenceManager.getDefaultSharedPreferences(this);
 
-        mImageViewInterval = Long.parseLong(mPref.getString("preference_imageview_interval", "10000"));
-        Log.d(TAG, "mImageViewInterval:" + mImageViewInterval);
-
         mCamouflage = mPref.getString("preference_camouflage", "");
         Log.d(TAG, "mCamouflage:" + mCamouflage);
         if(CAMOUFLAGE_MODE_IMAGEVIEW.equals(mCamouflage)) {
+            mCamouflageImageview = true;
 
             // get file list from the external storage path
             String path = getExternalFilesDir(Environment.DIRECTORY_PICTURES).getPath();
@@ -129,37 +127,6 @@ public class VideoActivity extends AppCompatActivity {
     protected void onResume() {
         Log.d(TAG, "onResume()");
         super.onResume();
-
-        if(mImageView != null) {
-            // set handler to get image for imageview
-            final Handler handler = new Handler();
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mFilePos++;
-                    if (mFilePos >= mFileNum) {
-                        mFilePos = 0;
-                    }
-
-                    Log.d(TAG, "Current Pos in image list: " + mFilePos);
-//                Log.d(TAG, mFiles[mFilePos].getPath());
-
-                    try (InputStream inputStream0 =
-                                 new FileInputStream(mFiles[mFilePos])) {
-                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream0);
-                        mImageView.setImageBitmap(bitmap);
-                        mImageView.invalidate();
-                        handler.postDelayed(this, mImageViewInterval);
-                        if (isFinished) {
-                            handler.removeCallbacks(this);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            isFinished = false;
-        }
     }
     @Override
     protected void onDestroy() {
@@ -189,6 +156,31 @@ public class VideoActivity extends AppCompatActivity {
 
             default:
                 return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public void imageClickEvent(boolean increment) {
+        if(! mCamouflageImageview) return;
+
+        if(increment) {
+            mFilePos++;
+            if (mFilePos >= mFileNum) {
+                mFilePos = 0;
+            }
+        }else{
+            mFilePos--;
+            if (mFilePos < 0) {
+                mFilePos = mFileNum - 1;
+            }
+        }
+        Log.d(TAG, "Current Pos in image list: " + mFilePos);
+        try (InputStream inputStream0 =
+                     new FileInputStream(mFiles[mFilePos])) {
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream0);
+            mImageView.setImageBitmap(bitmap);
+            mImageView.invalidate();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

@@ -21,21 +21,6 @@
         <item>theme</item>
     </string-array>
 
-    <string-array name="entries_preference_imageview_interval">
-        <item>10s</item>
-        <item>30s</item>
-        <item>1m</item>
-        <item>5m</item>
-        <item>10m</item>
-    </string-array>
-    <string-array name="entry_values_preference_imageview_interval">
-        <item>10000</item>
-        <item>30000</item>
-        <item>60000</item>
-        <item>300000</item>
-        <item>600000</item>
-    </string-array>
-
     <string-array name="entries_preference_finder_location">
         <item>TopLeft</item>
         <item>TopRight</item>

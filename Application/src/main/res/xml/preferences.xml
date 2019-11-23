@@ -26,14 +26,6 @@
             android:entryValues="@array/entry_values_preference_camouflage"
             android:defaultValue="@string/default_value_preference_camouflage" />
 
-        <ListPreference
-            android:title="Imageview Interval"
-            android:key="preference_imageview_interval"
-            android:summary="%s"
-            android:entries="@array/entries_preference_imageview_interval"
-            android:entryValues="@array/entry_values_preference_imageview_interval"
-            android:defaultValue="@string/default_value_preference_imageview_interval" />
-
     </PreferenceScreen>
     <PreferenceScreen
         android:title="Finder"
