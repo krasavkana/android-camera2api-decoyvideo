@@ -112,7 +112,7 @@ public class VideoUIFragment extends Camera2VideoFragment {
     /**
      * Whether the app will record on start
      */
-    private boolean mIsRecordOnStart;
+//    private boolean mIsRecordOnStart;
 
     /**
      * Whether CONTROL_AF_MODE is ON

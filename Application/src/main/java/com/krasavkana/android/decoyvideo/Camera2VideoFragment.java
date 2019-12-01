@@ -40,6 +40,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -62,6 +63,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -86,6 +88,7 @@ public abstract class Camera2VideoFragment extends Fragment {
 
     private static final int REQUEST_VIDEO_PERMISSIONS = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
+    private static final String DCIM_SUBDIRECTORY_FOR_SAVE = "decoy";
 
     private static final String[] VIDEO_PERMISSIONS = {
             Manifest.permission.CAMERA,
@@ -217,6 +220,11 @@ public abstract class Camera2VideoFragment extends Fragment {
     protected boolean mIsLensFacingFront;
 
     /**
+     * Whether the app will record on start
+     */
+    protected boolean mIsRecordOnStart;
+
+    /**
      * Save button is visible while saving image file
      */
     protected ImageButton mButtonSave;
@@ -268,7 +276,6 @@ public abstract class Camera2VideoFragment extends Fragment {
     };
     private Integer mSensorOrientation;
     private String mVideoAbsolutePath;
-    private String mVideoFileName;
     private CaptureRequest.Builder mPreviewBuilder;
 
 //    public static Camera2VideoFragment newInstance() {
@@ -337,6 +344,9 @@ public abstract class Camera2VideoFragment extends Fragment {
 
     @Override
     public void onPause() {
+//        if(mIsRecordingVideo) {
+//            stopRecordingVideo();
+//        }
         closeCamera();
         stopBackgroundThread();
         super.onPause();
@@ -389,7 +399,7 @@ public abstract class Camera2VideoFragment extends Fragment {
             new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
 //            FragmentCompat.requestPermissions(this, VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
-            requestPermissions(new String[]{Manifest.permission.CAMERA,Manifest.permission.RECORD_AUDIO}, REQUEST_VIDEO_PERMISSIONS);
+            requestPermissions(VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
         }
     }
 
@@ -551,17 +561,46 @@ public abstract class Camera2VideoFragment extends Fragment {
 
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onConfigured");
                             mPreviewSession = session;
                             updatePreview();
                         }
 
                         @Override
                         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onConfigureFailed");
                             Activity activity = getActivity();
                             if (null != activity) {
                                 Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show();
                             }
                         }
+
+                        @Override
+                        public void onActive(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onActive");
+                            if(mIsRecordOnStart){
+                                mIsRecordOnStart = false;
+                                startRecordingVideo();
+                            }
+                        }
+                        @Override
+                        public void onCaptureQueueEmpty(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onCaptureQueueEmpty");
+                        }
+                        @Override
+                        public void onClosed(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onClosed");
+                        }
+                        @Override
+                        public void onReady(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onReady");
+                        }
+                        @Override
+                        public void onSurfacePrepared(@NonNull CameraCaptureSession session,
+                                                      Surface surface) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onSurfacePrepared");
+                        }
+
                     }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -578,8 +617,8 @@ public abstract class Camera2VideoFragment extends Fragment {
         }
         try {
             setUpCaptureRequestBuilder(mPreviewBuilder);
-            HandlerThread thread = new HandlerThread("CameraPreview");
-            thread.start();
+//            HandlerThread thread = new HandlerThread("CameraPreview");
+//            thread.start();
             mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -672,8 +711,8 @@ public abstract class Camera2VideoFragment extends Fragment {
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         if (mVideoAbsolutePath == null || mVideoAbsolutePath.isEmpty()) {
-            mVideoFileName = getVideoFileName();
             mVideoAbsolutePath = getVideoFilePath(getActivity());
+            Log.d(TAG, "setUpMediaRecorder(): " + mVideoAbsolutePath);
         }
         mMediaRecorder.setOutputFile(mVideoAbsolutePath);
         mMediaRecorder.setVideoEncodingBitRate(10000000);
@@ -690,16 +729,20 @@ public abstract class Camera2VideoFragment extends Fragment {
                 mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(rotation));
                 break;
         }
-        mMediaRecorder.prepare();
+//        try {
+            mMediaRecorder.prepare();
+//        } catch (IOException e) {
+//            Toast.makeText(activity, "Cannot access external data.", Toast.LENGTH_SHORT).show();
+////            activity.finish();
+//            e.printStackTrace();
+//        }
     }
 
     private String getVideoFilePath(Context context) {
-        final File dir = context.getExternalFilesDir(null);
-        return (dir == null ? "" : (dir.getAbsolutePath() + "/"))
-                + mVideoFileName;
-    }
-    private String getVideoFileName() {
-        return (mPrefix + getNowTimestamp() + ".mp4");
+        //"MyApp_folder"直下にサブディレクトリを作成
+        File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), DCIM_SUBDIRECTORY_FOR_SAVE);
+        if(!saveDir.exists()){  saveDir.mkdir();  }
+        return saveDir.getAbsolutePath() + "/" + mPrefix + getNowTimestamp() + ".mp4";
     }
 
     protected void startRecordingVideo() {
@@ -843,8 +886,7 @@ public abstract class Camera2VideoFragment extends Fragment {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
 //                            FragmentCompat.requestPermissions(parent, VIDEO_PERMISSIONS,
-                              requestPermissions(new String[]{Manifest.permission.CAMERA,Manifest.permission.RECORD_AUDIO},
-                                    REQUEST_VIDEO_PERMISSIONS);
+                              requestPermissions(VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
                         }
                     })
                     .setNegativeButton(android.R.string.cancel,
