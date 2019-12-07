@@ -16,43 +16,14 @@
 
 package com.krasavkana.android.decoyvideo;
 
-import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
-import android.app.Fragment;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.content.res.Configuration;
-import android.graphics.Matrix;
-import android.graphics.RectF;
-import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CameraMetadata;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
-import androidx.annotation.NonNull;
-//import android.support.annotation.NonNull;
-//import FragmentCompat;
-//import android.support.v13.app.FragmentCompat;
-import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
-//import android.support.v4.app.ActivityCompat;
 import android.util.Log;
-import android.util.Size;
-import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.ActionMode;
 import android.view.GestureDetector;
@@ -62,26 +33,12 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.Surface;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
-
-import java.io.File;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 public class VideoUIFragment extends Camera2VideoFragment {
 
@@ -293,6 +250,12 @@ public class VideoUIFragment extends Camera2VideoFragment {
                     mIsLensFacingFront = false;
                 }else{
                     mIsLensFacingFront = true;
+                }
+                // 録画中にLens向きを変更した場合、一旦録画を完了して、起動時自動録画する
+                if (mIsRecordingVideo) {
+                    stopRecordingVideo();
+                    mIsRecordOnStart = true;
+                    Toast.makeText(getActivity(), "Flipped", Toast.LENGTH_SHORT).show();
                 }
                 onPause();
                 onResume();
