@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import androidx.preference.PreferenceManager;
@@ -80,7 +81,6 @@ public class VideoUIFragment extends Camera2VideoFragment {
      * Capture Intent Mode
      */
 //    private String mCaptureIntent;
-
     public static VideoUIFragment newInstance() {
         return new VideoUIFragment();
     }
@@ -97,13 +97,12 @@ public class VideoUIFragment extends Camera2VideoFragment {
      * View.OnKeyListenerを設定する
      * http://outofmem.hatenablog.com/entry/2014/04/20/090047
      * https://stackoverflow.com/questions/7992216/android-fragment-handle-back-button-press
-     *
      */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         Log.d(TAG, "onCreateView()");
-        final View v =inflater.inflate(R.layout.fragment_camera2_video, container, false);
+        final View v = inflater.inflate(R.layout.fragment_camera2_video, container, false);
 
         // View#setFocusableInTouchModeでtrueをセットしておくこと
         v.setFocusableInTouchMode(true);
@@ -114,10 +113,10 @@ public class VideoUIFragment extends Camera2VideoFragment {
                 // KeyEvent.ACTION_DOWN以外のイベントを無視する
                 // （これがないとKeyEvent.ACTION_UPもフックしてしまう）
                 Log.d(TAG, "onKey()");
-                if(event.getAction() != KeyEvent.ACTION_DOWN) {
+                if (event.getAction() != KeyEvent.ACTION_DOWN) {
                     return false;
                 }
-                switch(keyCode) {
+                switch (keyCode) {
 //                    case KeyEvent.KEYCODE_VOLUME_UP:
 //                        // TODO:音量増加キーが押された時のイベント
 //                        return true;
@@ -202,9 +201,9 @@ public class VideoUIFragment extends Camera2VideoFragment {
                     }
                 });
 
-        v.setOnTouchListener( new View.OnTouchListener() {
+        v.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event){
+            public boolean onTouch(View v, MotionEvent event) {
 //                Log.d(TAG, "onTouch(): fragment");
                 return gesture.onTouchEvent(event);
             }
@@ -215,12 +214,13 @@ public class VideoUIFragment extends Camera2VideoFragment {
     }
 
     @Override
-    public void onResume(){
+    public void onResume() {
         super.onResume();
         mHandler = new Handler();
     }
+
     @Override
-    public void onPause(){
+    public void onPause() {
         super.onPause();
         mHandler = null;
     }
@@ -234,11 +234,11 @@ public class VideoUIFragment extends Camera2VideoFragment {
         mButtonVideo = (Button) view.findViewById(R.id.video);
         mButtonVideo.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                        if (mIsRecordingVideo) {
-                            stopRecordingVideo();
-                        } else {
-                            startRecordingVideo();
-                        }
+                if (mIsRecordingVideo) {
+                    stopRecordingVideo();
+                } else {
+                    startRecordingVideo();
+                }
             }
 
         });
@@ -246,11 +246,12 @@ public class VideoUIFragment extends Camera2VideoFragment {
         mButtonLensFacing = view.findViewById(R.id.info);
         mButtonLensFacing.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                if (mIsLensFacingFront){
+                if (mIsLensFacingFront) {
                     mIsLensFacingFront = false;
-                }else{
+                } else {
                     mIsLensFacingFront = true;
                 }
+                changeColorOfButtonLensFacing(mIsLensFacingFront);
                 // 録画中にLens向きを変更した場合、一旦録画を完了して、起動時自動録画する
                 if (mIsRecordingVideo) {
                     stopRecordingVideo();
@@ -343,26 +344,26 @@ public class VideoUIFragment extends Camera2VideoFragment {
         String finderSize = mPref.getString("preference_finder_size", "40x60");
         Log.d(TAG, "finderSize:" + finderSize);
         // ファインダの大きさを設定する
-        int finderWidth = Integer.parseInt(finderSize.substring(0,finderSize.indexOf('x')));
+        int finderWidth = Integer.parseInt(finderSize.substring(0, finderSize.indexOf('x')));
         Log.d(TAG, "finderWidth:" + finderWidth);
-        int finderHeight = Integer.parseInt(finderSize.substring(finderSize.indexOf('x')+1,finderSize.length()));
+        int finderHeight = Integer.parseInt(finderSize.substring(finderSize.indexOf('x') + 1, finderSize.length()));
         Log.d(TAG, "finderHeight:" + finderHeight);
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
 //                getValueInDP(getContext(),40),getValueInDP(getContext(),60)
-                getValueInDP(getContext(),finderWidth),getValueInDP(getContext(),finderHeight)
+                getValueInDP(getContext(), finderWidth), getValueInDP(getContext(), finderHeight)
         );
         // ファインダの場所を設定する
-        int M10DP = getValueInDP(getContext(),10);
-        switch(finderLocation){
+        int M10DP = getValueInDP(getContext(), 10);
+        switch (finderLocation) {
             case "TL":
                 lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
                 lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
-                lp.setMargins(M10DP,M10DP,0,0);
+                lp.setMargins(M10DP, M10DP, 0, 0);
                 break;
             case "TR":
                 lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
                 lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
-                lp.setMargins(0,M10DP,M10DP,0);
+                lp.setMargins(0, M10DP, M10DP, 0);
                 break;
             case "ML":
                 lp.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
@@ -371,12 +372,12 @@ public class VideoUIFragment extends Camera2VideoFragment {
             case "BL":
                 lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
                 lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
-                lp.setMargins(M10DP,0,0,M10DP);
+                lp.setMargins(M10DP, 0, 0, M10DP);
                 break;
             case "BR":
                 lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
                 lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
-                lp.setMargins(0,0,M10DP,M10DP);
+                lp.setMargins(0, 0, M10DP, M10DP);
                 break;
         }
         mTextureView.setLayoutParams(lp);
@@ -384,18 +385,19 @@ public class VideoUIFragment extends Camera2VideoFragment {
         // 撮影ボタンの表示ONOFF
         boolean buttonVideoOn = mPref.getBoolean("preference_video_button_on", true);
         Log.d(TAG, "buttonVideoOn:" + buttonVideoOn);
-        if(buttonVideoOn) {
+        if (buttonVideoOn) {
             mButtonVideo.setVisibility(View.VISIBLE);
-        }else{
+        } else {
             mButtonVideo.setVisibility(View.INVISIBLE);
         }
 
         // カメラ切り替えボタンの表示ONOFF
         boolean buttonLensFacingOn = mPref.getBoolean("preference_lens_facing_button_on", true);
         Log.d(TAG, "buttonLensFacingOn:" + buttonLensFacingOn);
-        if(buttonLensFacingOn) {
+        if (buttonLensFacingOn) {
             mButtonLensFacing.setVisibility(View.VISIBLE);
-        }else{
+            changeColorOfButtonLensFacing(mIsLensFacingFront);
+        } else {
             mButtonLensFacing.setVisibility(View.INVISIBLE);
         }
 
@@ -412,33 +414,45 @@ public class VideoUIFragment extends Camera2VideoFragment {
     // Does setWidth(int pixels) use dip or px?
     // https://stackoverflow.com/questions/2406449/does-setwidthint-pixels-use-dip-or-px
     // value in DP
-    public static int getValueInDP(Context context, int value){
+    public static int getValueInDP(Context context, int value) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
     }
 
-    public static float getValueInDP(Context context, float value){
+    public static float getValueInDP(Context context, float value) {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
     }
 
     // value in PX
-    public static int getValueInPixel(Context context, int value){
+    public static int getValueInPixel(Context context, int value) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
     }
 
-    public static float getValueInPixel(Context context, float value){
+    public static float getValueInPixel(Context context, float value) {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
     }
 
-    public interface VideoUIFragmentCallback{
+    public interface VideoUIFragmentCallback {
         public void imageClickEvent(boolean increment);
     }
 
     private VideoUIFragmentCallback mCallback;
 
     // ガイドにはこうは書かれていないようだが、これで動作するので一旦よしとする
-    public void onAttach(Activity activity){
+    public void onAttach(Activity activity) {
         mCallback = (VideoUIFragmentCallback) activity;
         super.onAttach(activity);
     }
 
+    /**
+     * ImageButtonの色を変更する
+     * How do I change the tint of an ImageButton on focus/press
+     * https://stackoverflow.com/questions/3024983/how-do-i-change-the-tint-of-an-imagebutton-on-focus-press
+     */
+    private void changeColorOfButtonLensFacing(boolean isFront) {
+        if(isFront){
+            mButtonLensFacing.setColorFilter(Color.argb(255, 255, 255, 255));
+        }else{
+            mButtonLensFacing.setColorFilter(Color.argb(255, 0, 0, 0));
+        }
+    }
 }
