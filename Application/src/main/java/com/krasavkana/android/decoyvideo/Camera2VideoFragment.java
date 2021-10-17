@@ -27,8 +27,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -45,33 +43,21 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import androidx.annotation.NonNull;
-//import android.support.annotation.NonNull;
-//import FragmentCompat;
-//import android.support.v13.app.FragmentCompat;
-import androidx.core.app.ActivityCompat;
-import androidx.preference.PreferenceManager;
-//import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
-import android.util.TypedValue;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -82,20 +68,20 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class DecoyVideoFragment extends Fragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+public abstract class Camera2VideoFragment extends Fragment {
 
     private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
     private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
     private static final SparseIntArray DEFAULT_ORIENTATIONS = new SparseIntArray();
     private static final SparseIntArray INVERSE_ORIENTATIONS = new SparseIntArray();
 
-    private static final String TAG = "DecoyVideoFragment";
+    private static final String TAG = "Camera2VideoFragment";
 
     SharedPreferences mPref;
 
     private static final int REQUEST_VIDEO_PERMISSIONS = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
+    private static final String DCIM_SUBDIRECTORY_FOR_SAVE = "decoy";
 
     private static final String[] VIDEO_PERMISSIONS = {
             Manifest.permission.CAMERA,
@@ -123,30 +109,20 @@ public class DecoyVideoFragment extends Fragment
     /**
      * An {@link AutoFitTextureView} for camera preview.
      */
-    private AutoFitTextureView mTextureView;
+    protected AutoFitTextureView mTextureView;
 
     /**
      * Button to record video
      */
-    private boolean mButtonVideoOn;
-    private Button mButtonVideo;
+    protected Button mButtonVideo;
 
     /**
-     * LENS Facing button is visible
-     * Button to lens facing
-     */
-    private boolean mButtonLensFacingOn;
-    private ImageButton mButtonLensFacing;
-
-    private ImageButton mButtonSave;
-
-    /**
-     * A reference to the opened {@link android.hardware.camera2.CameraDevice}.
+     * A reference to the opened {@link CameraDevice}.
      */
     private CameraDevice mCameraDevice;
 
     /**
-     * A reference to the current {@link android.hardware.camera2.CameraCaptureSession} for
+     * A reference to the current {@link CameraCaptureSession} for
      * preview.
      */
     private CameraCaptureSession mPreviewSession;
@@ -155,7 +131,7 @@ public class DecoyVideoFragment extends Fragment
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
      * {@link TextureView}.
      */
-    private TextureView.SurfaceTextureListener mSurfaceTextureListener
+    protected TextureView.SurfaceTextureListener mSurfaceTextureListener
             = new TextureView.SurfaceTextureListener() {
 
         @Override
@@ -182,12 +158,12 @@ public class DecoyVideoFragment extends Fragment
     };
 
     /**
-     * The {@link android.util.Size} of camera preview.
+     * The {@link Size} of camera preview.
      */
     private Size mPreviewSize;
 
     /**
-     * The {@link android.util.Size} of video recording.
+     * The {@link Size} of video recording.
      */
     private Size mVideoSize;
 
@@ -197,29 +173,14 @@ public class DecoyVideoFragment extends Fragment
     private MediaRecorder mMediaRecorder;
 
     /**
-     * LENS Facing is FRONT
-     */
-    private boolean mIsLensFacingFront;
-
-    /**
-     * Finder Location
-     */
-    private String mFinderLocation;
-
-    /**
-     * Finder Size
-     */
-    private String mFinderSize;
-
-    /**
      * This is the output file for our video
      */
-    private String mPrefix;
+    protected String mPrefix;
 
     /**
      * Whether the app is recording video now
      */
-    private boolean mIsRecordingVideo;
+    protected boolean mIsRecordingVideo;
 
     /**
      * Whether camera device has been configured
@@ -227,19 +188,14 @@ public class DecoyVideoFragment extends Fragment
 //    private boolean mIsCameraConfigured;
 
     /**
-     * Whether the app will record on start
-     */
-    private boolean mIsRecordOnStart;
-
-    /**
      * Whether CONTROL_AF_MODE is ON
      */
-    private boolean mIsAutoFocus;
+    protected boolean mIsAutoFocus;
 
     /**
      * Capture Intent Mode
      */
-    private String mCaptureIntent;
+    protected String mCaptureIntent;
 
     /**
      * An additional thread for running tasks that shouldn't block the UI.
@@ -250,6 +206,26 @@ public class DecoyVideoFragment extends Fragment
      * A {@link Handler} for running tasks in the background.
      */
     private Handler mBackgroundHandler;
+
+    /**
+     * LENS Facing is FRONT
+     */
+    protected boolean mIsLensFacingFront;
+
+    /**
+     * Whether the app will record on start
+     */
+    protected boolean mIsRecordOnStart;
+
+    /**
+     * Save button is visible while saving image file
+     */
+    protected ImageButton mButtonSave;
+
+    /**
+     * A {@link Handler} for UI Thread to control mButtonSave when saving file
+     */
+    protected Handler mHandler;
 
     /**
      * A {@link Semaphore} to prevent the app from exiting before closing the camera.
@@ -270,11 +246,6 @@ public class DecoyVideoFragment extends Fragment
             if (null != mTextureView) {
                 configureTransform(mTextureView.getWidth(), mTextureView.getHeight());
             }
-//            mIsCameraConfigured = true;
-//            Log.d(TAG, "mIsCameraConfigured:" + mIsCameraConfigured);
-//            if (mIsRecordOnStart && mIsRecordingVideo==false) {
-//                startRecordingVideo();
-//            }
         }
 
         @Override
@@ -298,12 +269,11 @@ public class DecoyVideoFragment extends Fragment
     };
     private Integer mSensorOrientation;
     private String mVideoAbsolutePath;
-    private String mVideoFileName;
     private CaptureRequest.Builder mPreviewBuilder;
 
-    public static DecoyVideoFragment newInstance() {
-        return new DecoyVideoFragment();
-    }
+//    public static Camera2VideoFragment newInstance() {
+//        return new Camera2VideoFragment();
+//    }
 
     /**
      * In this sample, we choose a video size with 3x4 aspect ratio. Also, we don't use sizes
@@ -354,176 +324,6 @@ public class DecoyVideoFragment extends Fragment
         }
     }
 
-    /**
-     * View.OnKeyListenerを設定する
-     * http://outofmem.hatenablog.com/entry/2014/04/20/090047
-     * https://stackoverflow.com/questions/7992216/android-fragment-handle-back-button-press
-     *
-     */
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        Log.d(TAG, "onCreateView()");
-        final View v =inflater.inflate(R.layout.fragment_camera2_video, container, false);
-
-        // View#setFocusableInTouchModeでtrueをセットしておくこと
-        v.setFocusableInTouchMode(true);
-        v.requestFocus();
-        v.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                // KeyEvent.ACTION_DOWN以外のイベントを無視する
-                // （これがないとKeyEvent.ACTION_UPもフックしてしまう）
-                Log.d(TAG, "onKey()");
-                if(event.getAction() != KeyEvent.ACTION_DOWN) {
-                    return false;
-                }
-                switch(keyCode) {
-//                    case KeyEvent.KEYCODE_VOLUME_UP:
-//                        // TODO:音量増加キーが押された時のイベント
-//                        return true;
-                    case KeyEvent.KEYCODE_VOLUME_DOWN:
-                        // TODO:音量減少キーが押された時のイベント
-                        if (mIsRecordingVideo) {
-                            stopRecordingVideo();
-                        } else {
-                            startRecordingVideo();
-                        }
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-        });
-
-
-        return v;
-    }
-
-    @Override
-    public void onViewCreated(final View view, Bundle savedInstanceState) {
-        Log.d(TAG, "onViewCreated()");
-        Activity activity = getActivity();
-        mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-
-        mButtonVideo = (Button) view.findViewById(R.id.video);
-        mButtonVideo.setOnClickListener(this);
-//        ImageView imageView = view.findViewById(R.id.image_view);
-        mButtonLensFacing = view.findViewById(R.id.info);
-        mButtonLensFacing.setOnClickListener(this);
-
-        mButtonSave = view.findViewById(R.id.save);
-        mButtonSave.setVisibility(View.INVISIBLE);
-
-    }
-
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        Log.d(TAG, "onActivityCreated()");
-        super.onActivityCreated(savedInstanceState);
-        mPref = PreferenceManager.getDefaultSharedPreferences(getContext());
-        String aaa = mPref.getString("preference_theme", "");
-        Log.d(TAG, "preference_theme:" + aaa);
-        mIsLensFacingFront = mPref.getBoolean("preference_front_lens_facing", false);
-        Log.d(TAG, "mLensFacingFront:" + mIsLensFacingFront);
-        mPrefix = mPref.getString("preference_save_prefix", "");
-        Log.d(TAG, "mPrefix:" + mPrefix);
-        mIsRecordOnStart = mPref.getBoolean("preference_shoot_on_start", false);
-        Log.d(TAG, "mIsRecordOnStart:" + mIsRecordOnStart);
-
-        // ファインダの表示場所と大きさを変更する
-        mFinderLocation = mPref.getString("preference_finder_location", "ML");
-        Log.d(TAG, "mFinderLocation:" + mFinderLocation);
-        mFinderSize = mPref.getString("preference_finder_size", "40x60");
-        Log.d(TAG, "mFinderSize:" + mFinderSize);
-        // ファインダの大きさを設定する
-        int finderWidth = Integer.parseInt(mFinderSize.substring(0,mFinderSize.indexOf('x')));
-        Log.d(TAG, "finderWidth:" + finderWidth);
-        int finderHeight = Integer.parseInt(mFinderSize.substring(mFinderSize.indexOf('x')+1,mFinderSize.length()));
-        Log.d(TAG, "finderHeight:" + finderHeight);
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
-//                getValueInDP(getContext(),40),getValueInDP(getContext(),60)
-                getValueInDP(getContext(),finderWidth),getValueInDP(getContext(),finderHeight)
-        );
-        // ファインダの場所を設定する
-        int M10DP = getValueInDP(getContext(),10);
-        switch(mFinderLocation){
-            case "TL":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
-                lp.setMargins(M10DP,M10DP,0,0);
-                break;
-            case "TR":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
-                lp.setMargins(0,M10DP,M10DP,0);
-                break;
-            case "ML":
-                lp.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
-                lp.setMarginStart(M10DP);
-                break;
-            case "BL":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
-                lp.setMargins(M10DP,0,0,M10DP);
-                break;
-            case "BR":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
-                lp.setMargins(0,0,M10DP,M10DP);
-                break;
-        }
-        mTextureView.setLayoutParams(lp);
-
-        // 撮影ボタンの表示ONOFF
-        mButtonVideoOn = mPref.getBoolean("preference_video_button_on", true);
-        Log.d(TAG, "mButtonVideoOn:" + mButtonVideoOn);
-        if(mButtonVideoOn) {
-            mButtonVideo.setVisibility(View.VISIBLE);
-        }else{
-            mButtonVideo.setVisibility(View.INVISIBLE);
-        }
-
-        // カメラ切り替えボタンの表示ONOFF
-        mButtonLensFacingOn = mPref.getBoolean("preference_lens_facing_button_on", true);
-        Log.d(TAG, "mButtonLensFacingOn:" + mButtonLensFacingOn);
-        if(mButtonLensFacingOn) {
-            mButtonLensFacing.setVisibility(View.VISIBLE);
-        }else{
-            mButtonLensFacing.setVisibility(View.INVISIBLE);
-        }
-
-        // AF modeを変更する
-        mIsAutoFocus = mPref.getBoolean("preference_af_mode_on", true);
-        Log.d(TAG, "mIsAutoFocus:" + mIsAutoFocus);
-
-        // Capture Intent modeを変更する
-        mCaptureIntent = mPref.getString("preference_capture_intent", "VIDEO_RECORD");
-        Log.d(TAG, "mCaptureIntent:" + mCaptureIntent);
-
-    }
-
-    // Does setWidth(int pixels) use dip or px?
-    // https://stackoverflow.com/questions/2406449/does-setwidthint-pixels-use-dip-or-px
-    // value in DP
-    public static int getValueInDP(Context context, int value){
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
-    }
-
-    public static float getValueInDP(Context context, float value){
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
-    }
-
-    // value in PX
-    public static int getValueInPixel(Context context, int value){
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
-    }
-
-    public static float getValueInPixel(Context context, float value){
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
-    }
-
-
     @Override
     public void onResume() {
         super.onResume();
@@ -533,38 +333,16 @@ public class DecoyVideoFragment extends Fragment
         } else {
             mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
         }
-//        Log.d(TAG, "mIsCameraConfigured:" + mIsCameraConfigured);
     }
 
     @Override
     public void onPause() {
+//        if(mIsRecordingVideo) {
+//            stopRecordingVideo();
+//        }
         closeCamera();
         stopBackgroundThread();
         super.onPause();
-    }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.video: {
-                if (mIsRecordingVideo) {
-                    stopRecordingVideo();
-                } else {
-                    startRecordingVideo();
-                }
-                break;
-            }
-            case R.id.info: {
-                if (mIsLensFacingFront){
-                    mIsLensFacingFront = false;
-                }else{
-                    mIsLensFacingFront = true;
-                }
-                onPause();
-                onResume();
-                break;
-            }
-        }
     }
 
     /**
@@ -614,7 +392,7 @@ public class DecoyVideoFragment extends Fragment
             new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
 //            FragmentCompat.requestPermissions(this, VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
-            requestPermissions(new String[]{Manifest.permission.CAMERA,Manifest.permission.RECORD_AUDIO}, REQUEST_VIDEO_PERMISSIONS);
+            requestPermissions(VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
         }
     }
 
@@ -776,17 +554,46 @@ public class DecoyVideoFragment extends Fragment
 
                         @Override
                         public void onConfigured(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onConfigured");
                             mPreviewSession = session;
                             updatePreview();
                         }
 
                         @Override
                         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onConfigureFailed");
                             Activity activity = getActivity();
                             if (null != activity) {
                                 Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show();
                             }
                         }
+
+                        @Override
+                        public void onActive(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onActive");
+                            if(mIsRecordOnStart){
+                                mIsRecordOnStart = false;
+                                startRecordingVideo();
+                            }
+                        }
+                        @Override
+                        public void onCaptureQueueEmpty(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onCaptureQueueEmpty");
+                        }
+                        @Override
+                        public void onClosed(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onClosed");
+                        }
+                        @Override
+                        public void onReady(@NonNull CameraCaptureSession session) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onReady");
+                        }
+                        @Override
+                        public void onSurfacePrepared(@NonNull CameraCaptureSession session,
+                                                      Surface surface) {
+                            Log.d(TAG, "CameraCaptureSession.StateCallback():onSurfacePrepared");
+                        }
+
                     }, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -803,8 +610,8 @@ public class DecoyVideoFragment extends Fragment
         }
         try {
             setUpCaptureRequestBuilder(mPreviewBuilder);
-            HandlerThread thread = new HandlerThread("CameraPreview");
-            thread.start();
+//            HandlerThread thread = new HandlerThread("CameraPreview");
+//            thread.start();
             mPreviewSession.setRepeatingRequest(mPreviewBuilder.build(), null, mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -856,7 +663,7 @@ public class DecoyVideoFragment extends Fragment
     }
 
     /**
-     * Configures the necessary {@link android.graphics.Matrix} transformation to `mTextureView`.
+     * Configures the necessary {@link Matrix} transformation to `mTextureView`.
      * This method should not to be called until the camera preview size is determined in
      * openCamera, or until the size of `mTextureView` is fixed.
      *
@@ -897,8 +704,8 @@ public class DecoyVideoFragment extends Fragment
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
         mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         if (mVideoAbsolutePath == null || mVideoAbsolutePath.isEmpty()) {
-            mVideoFileName = getVideoFileName();
             mVideoAbsolutePath = getVideoFilePath(getActivity());
+            Log.d(TAG, "setUpMediaRecorder(): " + mVideoAbsolutePath);
         }
         mMediaRecorder.setOutputFile(mVideoAbsolutePath);
         mMediaRecorder.setVideoEncodingBitRate(10000000);
@@ -915,19 +722,23 @@ public class DecoyVideoFragment extends Fragment
                 mMediaRecorder.setOrientationHint(INVERSE_ORIENTATIONS.get(rotation));
                 break;
         }
-        mMediaRecorder.prepare();
+//        try {
+            mMediaRecorder.prepare();
+//        } catch (IOException e) {
+//            Toast.makeText(activity, "Cannot access external data.", Toast.LENGTH_SHORT).show();
+////            activity.finish();
+//            e.printStackTrace();
+//        }
     }
 
     private String getVideoFilePath(Context context) {
-        final File dir = context.getExternalFilesDir(null);
-        return (dir == null ? "" : (dir.getAbsolutePath() + "/"))
-                + mVideoFileName;
-    }
-    private String getVideoFileName() {
-        return (mPrefix + getNowTimestamp() + ".mp4");
+        //"MyApp_folder"直下にサブディレクトリを作成
+        File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), DCIM_SUBDIRECTORY_FOR_SAVE);
+        if(!saveDir.exists()){  saveDir.mkdir();  }
+        return saveDir.getAbsolutePath() + "/" + mPrefix + getNowTimestamp() + ".mp4";
     }
 
-    private void startRecordingVideo() {
+    protected void startRecordingVideo() {
         Log.d(TAG, "startRecordingVideo()");
         if (null == mCameraDevice || !mTextureView.isAvailable() || null == mPreviewSize) {
             return;
@@ -995,7 +806,7 @@ public class DecoyVideoFragment extends Fragment
         }
     }
 
-    private void stopRecordingVideo() {
+    protected void stopRecordingVideo() {
         Log.d(TAG, "stopRecordingVideo()");
         // UI
         mIsRecordingVideo = false;
@@ -1068,8 +879,7 @@ public class DecoyVideoFragment extends Fragment
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
 //                            FragmentCompat.requestPermissions(parent, VIDEO_PERMISSIONS,
-                              requestPermissions(new String[]{Manifest.permission.CAMERA,Manifest.permission.RECORD_AUDIO},
-                                    REQUEST_VIDEO_PERMISSIONS);
+                              requestPermissions(VIDEO_PERMISSIONS, REQUEST_VIDEO_PERMISSIONS);
                         }
                     })
                     .setNegativeButton(android.R.string.cancel,
@@ -1091,22 +901,5 @@ public class DecoyVideoFragment extends Fragment
         final DateFormat df = new SimpleDateFormat("yyyyMMdd'T'HHmmssSSS");
         final Date date = new Date(System.currentTimeMillis());
         return df.format(date);
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate()");
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    public void onStop() {
-        Log.d(TAG, "onStop()");
-        super.onStop();
-    }
-    @Override
-    public void onDestroy() {
-        Log.d(TAG, "onDestroy()");
-        super.onDestroy();
     }
 }
